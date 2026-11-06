@@ -72,7 +72,7 @@ function serieToSet(code: string): string | null {
 const inSet = (setId: string, code: string) =>
   setId === code || (setId.startsWith(code) && /^[a-z]+$/.test(setId.slice(code.length)))
 
-const byLocal = (cards: Card[], left: string) => {
+export const byLocal = (cards: Card[], left: string) => {
   const L = splitId(left)
   return cards.filter((c) => {
     const C = splitId(c.localId)

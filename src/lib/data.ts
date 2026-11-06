@@ -108,6 +108,45 @@ export function ptcgImage(cardId: string, quality: 'low' | 'high' = 'low'): stri
   return `https://images.pokemontcg.io/${set}/${num}${quality === 'high' ? '_hires' : ''}.png`
 }
 
+export interface Price {
+  trend: number | null
+  low: number | null
+  avg30: number | null
+  /** Prix de la version reverse / holo quand Cardmarket les distingue. */
+  holoTrend: number | null
+  url: string
+}
+
+const priceCache = new Map<string, Promise<Price | null>>()
+/** Prix Cardmarket (fournis gratuitement par TCGdex, mis à jour chaque jour). */
+export function fetchPrice(card: Pick<Card, 'id' | 'name'>): Promise<Price | null> {
+  if (!priceCache.has(card.id)) {
+    priceCache.set(
+      card.id,
+      (async () => {
+        try {
+          const r = await fetch(`${API}/cards/${encodeURIComponent(card.id)}`)
+          if (!r.ok) return null
+          const cm = (await r.json()).pricing?.cardmarket
+          const num = (v: unknown) => (typeof v === 'number' && v > 0 ? v : null)
+          return {
+            trend: num(cm?.trend),
+            low: num(cm?.low),
+            avg30: num(cm?.avg30),
+            holoTrend: num(cm?.['trend-holo']),
+            url: cm?.idProduct
+              ? `https://www.cardmarket.com/fr/Pokemon/Products?idProduct=${cm.idProduct}`
+              : `https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=${encodeURIComponent(card.name)}`,
+          }
+        } catch {
+          return null
+        }
+      })(),
+    )
+  }
+  return priceCache.get(card.id)!
+}
+
 export function cardLabel(c: Pick<Card, 'setId' | 'localId'>) {
   const s = db.sets[c.setId]
   const numeric = /^\d+$/.test(c.localId)

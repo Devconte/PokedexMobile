@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import CardImage from './CardImage.vue'
-import { cardLabel } from '../lib/data'
+import { cardLabel, fetchPrice, type Price } from '../lib/data'
 import type { Card, Owned } from '../lib/types'
 
 const props = defineProps<{ card: Card; owned: Owned | null }>()
@@ -12,6 +12,23 @@ watch(
   () => props.owned,
   (o) => (note.value = o?.note ?? ''),
 )
+
+const price = ref<Price | null>(null)
+const priceLoading = ref(true)
+watch(
+  () => props.card.id,
+  async () => {
+    price.value = null
+    priceLoading.value = true
+    price.value = await fetchPrice(props.card)
+    priceLoading.value = false
+  },
+  { immediate: true },
+)
+const eur = (v: number | null) => (v == null ? '—' : v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }))
+const searchUrl = computed(
+  () => `https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=${encodeURIComponent(props.card.name)}`,
+)
 </script>
 
 <template>
@@ -21,6 +38,19 @@ watch(
       <div class="body">
         <h2>{{ card.name }}</h2>
         <p class="muted small">{{ info.set }} · {{ info.num }}<template v-if="info.year"> · {{ info.year }}</template></p>
+
+        <div class="price">
+          <template v-if="priceLoading"><span class="muted small">Prix Cardmarket…</span></template>
+          <template v-else-if="price && (price.trend || price.low)">
+            <div class="pcell"><span class="muted small">Tendance</span><b>{{ eur(price.trend) }}</b></div>
+            <div class="pcell"><span class="muted small">À partir de</span><b>{{ eur(price.low) }}</b></div>
+            <div class="pcell"><span class="muted small">Moy. 30 j</span><b>{{ eur(price.avg30) }}</b></div>
+            <div v-if="price.holoTrend" class="pcell"><span class="muted small">Reverse</span><b>{{ eur(price.holoTrend) }}</b></div>
+          </template>
+          <span v-else class="muted small">Pas de prix connu pour cette carte.</span>
+        </div>
+        <a class="btn block" :href="price?.url ?? searchUrl" target="_blank" rel="noopener">Voir sur Cardmarket ↗</a>
+
         <template v-if="owned">
           <p class="ok">✓ Dans ta collection<template v-if="owned.featured"> · ★ affichée dans le Pokédex</template></p>
           <textarea v-model="note" class="input" rows="2" placeholder="Note (reverse, état, gradée…)" @change="emit('note', note)" />
@@ -80,6 +110,19 @@ watch(
 }
 .body p {
   margin: 0;
+}
+.price {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 8px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.pcell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .ok {
   color: var(--ok);

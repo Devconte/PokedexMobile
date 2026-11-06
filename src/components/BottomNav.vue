@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const items = [
   { to: '/', label: 'Pokédex', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 0 1 7.9 7h-4.1a4 4 0 0 0-7.6 0H4.1A8 8 0 0 1 12 4Zm0 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm-7.9 3h4.1a4 4 0 0 0 7.6 0h4.1a8 8 0 0 1-15.8 0Z' },
+  { to: '/scan', label: 'Scan', icon: 'M4 4h5v2H6v3H4V4Zm11 0h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3ZM8 8h8v8H8V8Zm2 2v4h4v-4h-4Z' },
   { to: '/suivis', label: 'Suivis', icon: 'M6 2h12a1 1 0 0 1 1 1v19l-7-4-7 4V3a1 1 0 0 1 1-1Zm1 2v14.6l5-2.9 5 2.9V4H7Z' },
   { to: '/stats', label: 'Stats', icon: 'M4 20V10h3v10H4Zm6 0V4h3v16h-3Zm6 0v-7h3v7h-3Z' },
   { to: '/compte', label: 'Compte', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z' },
