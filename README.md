@@ -27,8 +27,8 @@ git --version
 ## 2. Installation
 
 ```bash
-git clone https://github.com/Devconte/pokedex-tcg.git
-cd pokedex-tcg
+git clone https://github.com/Devconte/PokedexMobile.git
+cd PokedexMobile
 npm install
 ```
 
@@ -104,7 +104,7 @@ Ne mets **jamais** la clé `service_role` dans l'app.
 ## 6. Mettre en ligne (Vercel, gratuit)
 
 1. Va sur [vercel.com](https://vercel.com) et connecte-toi avec GitHub.
-2. Fais **Add New → Project**, puis importe le dépôt `pokedex-tcg`. Vite est détecté automatiquement.
+2. Fais **Add New → Project**, puis importe le dépôt `PokedexMobile`. Vite est détecté automatiquement.
 3. Dans **Environment Variables**, ajoute `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`.
 4. Clique sur **Deploy**. Chaque `git push` sur `main` redéploie ensuite le site automatiquement.
 
