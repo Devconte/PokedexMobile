@@ -135,7 +135,8 @@ export function fetchPrice(card: Pick<Card, 'id' | 'name'>): Promise<Price | nul
             avg30: num(cm?.avg30),
             holoTrend: num(cm?.['trend-holo']),
             url: cm?.idProduct
-              ? `https://www.cardmarket.com/fr/Pokemon/Products?idProduct=${cm.idProduct}`
+              ? // language=2 : n'affiche que les offres de cartes en français.
+                `https://www.cardmarket.com/fr/Pokemon/Products?idProduct=${cm.idProduct}&language=2`
               : `https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=${encodeURIComponent(card.name)}`,
           }
         } catch {

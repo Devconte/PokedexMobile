@@ -49,7 +49,8 @@ const searchUrl = computed(
           </template>
           <span v-else class="muted small">Pas de prix connu pour cette carte.</span>
         </div>
-        <a class="btn block" :href="price?.url ?? searchUrl" target="_blank" rel="noopener">Voir sur Cardmarket ↗</a>
+        <p v-if="price && (price.trend || price.low)" class="muted small pnote">Prix Cardmarket toutes langues confondues.</p>
+        <a class="btn block" :href="price?.url ?? searchUrl" target="_blank" rel="noopener">Voir les offres en français sur Cardmarket ↗</a>
 
         <template v-if="owned">
           <p class="ok">✓ Dans ta collection<template v-if="owned.featured"> · ★ affichée dans le Pokédex</template></p>
@@ -118,6 +119,10 @@ const searchUrl = computed(
   background: var(--surface-2);
   border-radius: 10px;
   padding: 10px 12px;
+}
+.body .pnote {
+  margin-top: -4px;
+  font-size: 0.72rem;
 }
 .pcell {
   display: flex;
