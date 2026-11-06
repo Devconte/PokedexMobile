@@ -17,6 +17,9 @@ create index if not exists owned_cards_user_idx on public.owned_cards (user_id);
 create unique index if not exists owned_cards_unique_card
   on public.owned_cards (user_id, entry_id, card_id) where card_id is not null;
 
+-- Les projets Supabase récents n'exposent plus les nouvelles tables à l'API : on donne l'accès aux utilisateurs connectés.
+grant select, insert, update, delete on public.owned_cards to authenticated;
+
 -- Chaque utilisateur ne voit et ne modifie que sa collection.
 alter table public.owned_cards enable row level security;
 
