@@ -21,7 +21,11 @@ export const useAuth = defineStore('auth', () => {
   }
 
   async function signUp(email: string, password: string) {
-    const { data, error } = await supabase!.auth.signUp({ email, password })
+    const { data, error } = await supabase!.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin }, // revient sur le site actuel, pas sur localhost
+    })
     if (error) throw error
     return !!data.session // false = confirmation par e-mail requise
   }
