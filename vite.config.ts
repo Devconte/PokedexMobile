@@ -31,7 +31,7 @@ export default defineConfig({
         navigateFallback: '/index.html',
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/assets\.tcgdex\.net\//,
+            urlPattern: /^https:\/\/(assets\.tcgdex\.net|images\.pokemontcg\.io)\//,
             handler: 'CacheFirst',
             options: { cacheName: 'card-images', expiration: { maxEntries: 4000, maxAgeSeconds: 60 * 60 * 24 * 90 }, cacheableResponse: { statuses: [0, 200] } },
           },

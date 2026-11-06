@@ -8,7 +8,9 @@ import { FORM_LABEL } from '../lib/forms'
 import { artwork, pad } from '../lib/text'
 import type { Card, Owned } from '../lib/types'
 import { useCollection } from '../stores/collection'
+import { useFollows } from '../stores/follows'
 
+const follows = useFollows()
 const route = useRoute()
 const router = useRouter()
 const col = useCollection()
@@ -106,7 +108,7 @@ const neighbors = computed(() => {
 
     <section class="hero">
       <div class="card-ratio heroimg">
-        <CardImage v-if="hero?.kind === 'card'" :src="hero.img" quality="high" :alt="entry.name" />
+        <CardImage v-if="hero?.kind === 'card'" :src="hero.img" :card-id="hero.cardId" quality="high" :alt="entry.name" />
         <img v-else :src="artwork(entry.dex)" :alt="entry.name" class="art" :class="{ ghost: !hero }" />
       </div>
       <div class="herotext">
@@ -124,6 +126,9 @@ const neighbors = computed(() => {
           </div>
         </div>
         <button v-if="!unknown.length" class="btn small" :disabled="busy" @click="addUnknown">J'en ai une, mais je ne sais pas laquelle</button>
+        <RouterLink :to="`/suivis/${entry.dex}`" class="btn small">
+          Toutes ses cartes →<template v-if="follows.has(entry.dex)"> (suivi)</template>
+        </RouterLink>
         <p v-if="err" class="error">{{ err }}</p>
       </div>
     </section>
@@ -144,7 +149,7 @@ const neighbors = computed(() => {
     <div class="grid-cards list">
       <button v-for="c in cards" :key="c.id" class="cardbtn" :class="{ have: ownedByCard.has(c.id), picking: pickFor }" @click="onCard(c)">
         <div class="card-ratio">
-          <CardImage :src="c.img" :fallback="c.fallback" :alt="c.name" />
+          <CardImage :src="c.img" :fallback="c.fallback" :card-id="c.id" :alt="c.name" />
           <span v-if="ownedByCard.has(c.id)" class="check">{{ ownedByCard.get(c.id)!.featured ? '★' : '✓' }}</span>
         </div>
         <span class="cname">{{ c.name }}</span>

@@ -1,5 +1,5 @@
 import type { Card, Entry, SetInfo } from './types'
-import { filterForEntry } from './forms'
+import { cardFitsForm, filterForEntry } from './forms'
 
 const ASSETS = 'https://assets.tcgdex.net'
 const API = 'https://api.tcgdex.net/v2/fr'
@@ -66,7 +66,20 @@ export function cardsForEntry(entry: Entry, all = false, extra: Card[] = []): Ca
   return all ? cards : filterForEntry(cards, entry, db.byDex.get(entry.dex) ?? [])
 }
 
-const POCKET = /^(A\d|B\d|P-)/
+/** Case du Pokédex où ranger une carte : sa forme (Méga, Alola…) si elle a sa case, sinon le Pokémon de base. */
+export function entryForCard(card: Pick<Card, 'name'>, dex: number): Entry | undefined {
+  const list = db.byDex.get(dex) ?? []
+  return list.find((e) => e.form !== 'base' && cardFitsForm(card.name, e.form, e.variant)) ?? list.find((e) => e.form === 'base') ?? list[0]
+}
+
+/** Nom affiché pour un numéro Pokédex (le Pokémon de base). */
+export const speciesName = (dex: number) => {
+  const list = db.byDex.get(dex) ?? []
+  const e = list.find((x) => x.form === 'base') ?? list[0]
+  return e ? (e.species ?? e.name) : `#${dex}`
+}
+
+const POCKET =/^(A\d|B\d|P-)/
 /** Cartes sorties après la génération de l'index (interrogation en direct de l'API). */
 export async function fetchNewCards(dex: number): Promise<Card[]> {
   try {
@@ -81,6 +94,18 @@ export async function fetchNewCards(dex: number): Promise<Card[]> {
   } catch {
     return []
   }
+}
+
+/**
+ * Image de secours sur pokemontcg.io (gratuit), pour les cartes sans image chez TCGdex (ex. Galeries de Dresseurs).
+ * Les ids d'extension diffèrent un peu : "sm7.5" -> "sm75", "swsh12.5gg" -> "swsh12pt5gg", "sv3.5" -> "sv3pt5".
+ */
+export function ptcgImage(cardId: string, quality: 'low' | 'high' = 'low'): string | null {
+  const i = cardId.lastIndexOf('-')
+  if (i < 1) return null
+  const set = cardId.slice(0, i).replace(/\.5/, (_m, _at, s: string) => (/^(swsh12|sv)/.test(s) ? 'pt5' : '5'))
+  const num = cardId.slice(i + 1).replace(/^0+(?=\d)/, '')
+  return `https://images.pokemontcg.io/${set}/${num}${quality === 'high' ? '_hires' : ''}.png`
 }
 
 export function cardLabel(c: Pick<Card, 'setId' | 'localId'>) {

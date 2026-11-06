@@ -7,6 +7,8 @@ export const router = createRouter({
   routes: [
     { path: '/', component: PokedexView },
     { path: '/p/:id', component: () => import('./views/EntryView.vue') },
+    { path: '/suivis', component: () => import('./views/FollowsView.vue') },
+    { path: '/suivis/:dex(\\d+)', component: () => import('./views/TrackView.vue') },
     { path: '/stats', component: () => import('./views/StatsView.vue') },
     { path: '/compte', component: () => import('./views/AccountView.vue') },
     { path: '/import', component: () => import('./views/ImportView.vue') },

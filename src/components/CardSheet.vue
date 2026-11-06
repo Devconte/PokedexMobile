@@ -17,7 +17,7 @@ watch(
 <template>
   <div class="backdrop" @click.self="emit('close')">
     <div class="sheet" role="dialog" :aria-label="card.name">
-      <div class="big card-ratio"><CardImage :src="card.img" :fallback="card.fallback" quality="high" :alt="card.name" /></div>
+      <div class="big card-ratio"><CardImage :src="card.img" :fallback="card.fallback" :card-id="card.id" quality="high" :alt="card.name" /></div>
       <div class="body">
         <h2>{{ card.name }}</h2>
         <p class="muted small">{{ info.set }} · {{ info.num }}<template v-if="info.year"> · {{ info.year }}</template></p>

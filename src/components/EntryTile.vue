@@ -15,7 +15,7 @@ const form = computed(() => FORM_LABEL[props.entry.form] + (props.entry.variant 
 <template>
   <RouterLink :to="`/p/${entry.id}`" class="tile" :class="{ owned: display }">
     <div class="card-ratio thumb">
-      <CardImage v-if="display?.kind === 'card'" :src="display.img" :alt="entry.name" />
+      <CardImage v-if="display?.kind === 'card'" :src="display.img" :card-id="display.cardId" :alt="entry.name" />
       <img v-else :src="artwork(entry.dex)" :alt="entry.name" loading="lazy" class="art" :class="{ ghost: !display }" />
       <span v-if="display?.kind === 'unknown'" class="badge" title="Carte à identifier">?</span>
       <span v-if="form" class="form">{{ form }}</span>

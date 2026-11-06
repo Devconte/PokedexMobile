@@ -111,7 +111,7 @@ async function confirm() {
 
       <div class="list">
         <div v-for="r in shown.slice(0, 300)" :key="r.line" class="item card-panel">
-          <div class="thumb card-ratio"><CardImage v-if="r.chosen" :src="r.chosen.img" :fallback="r.chosen.fallback" /></div>
+          <div class="thumb card-ratio"><CardImage v-if="r.chosen" :src="r.chosen.img" :fallback="r.chosen.fallback" :card-id="r.chosen.id" /></div>
           <div class="info">
             <b>{{ r.name }}</b>
             <span class="small">Excel : <code>{{ r.ref || '—' }}</code><template v-if="r.note"> · {{ r.note }}</template></span>

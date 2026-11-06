@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { repo } from '../lib/repo'
 import type { Card, Entry, NewOwned, Owned } from '../lib/types'
 
-export type Display = { kind: 'card'; img: string | null; fallback?: string | null } | { kind: 'unknown' }
+export type Display = { kind: 'card'; img: string | null; cardId: string | null } | { kind: 'unknown' }
 
 export const useCollection = defineStore('collection', () => {
   const rows = ref<Owned[]>([])
@@ -25,7 +25,7 @@ export const useCollection = defineStore('collection', () => {
     for (const [entryId, list] of byEntry.value) {
       const withCard = list.filter((r) => r.card_id)
       const pick = withCard.find((r) => r.featured) ?? withCard[withCard.length - 1]
-      m.set(entryId, pick ? { kind: 'card', img: pick.image } : { kind: 'unknown' })
+      m.set(entryId, pick ? { kind: 'card', img: pick.image, cardId: pick.card_id } : { kind: 'unknown' })
     }
     return m
   })
