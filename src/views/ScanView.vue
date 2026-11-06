@@ -31,9 +31,13 @@ async function startCamera() {
   camState.value = 'starting'
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      // Le numéro est minuscule : on demande la meilleure définition possible.
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } },
       audio: false,
     })
+    const track = stream.getVideoTracks()[0]
+    // Mise au point continue quand le téléphone le permet (sinon ignoré).
+    await track?.applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] }).catch(() => {})
     camState.value = 'on'
     await nextTick()
     if (video.value) {
@@ -61,8 +65,20 @@ onMounted(() => {
 })
 onBeforeUnmount(stopCamera)
 
-/** Recadre l'image de la caméra sur le cadre affiché à l'écran (la vidéo est en "object-fit: cover"). */
-function captureFrame(): HTMLCanvasElement | null {
+type Img = CanvasImageSource & { width: number; height: number }
+const crop = (src: Img, fx: number, fy: number, fw: number, fh: number) => {
+  const c = document.createElement('canvas')
+  c.width = Math.round(src.width * fw)
+  c.height = Math.round(src.height * fh)
+  c.getContext('2d')!.drawImage(src, src.width * fx, src.height * fy, src.width * fw, src.height * fh, 0, 0, c.width, c.height)
+  return c
+}
+
+/**
+ * Image de la carte dans le cadre affiché (la vidéo est en "object-fit: cover").
+ * Sur Android, on prend une vraie photo pleine définition (ImageCapture) : bien plus net que la vidéo.
+ */
+async function captureFrame(): Promise<HTMLCanvasElement | null> {
   const v = video.value
   const f = frame.value
   if (!v || !f || !v.videoWidth) return null
@@ -71,15 +87,24 @@ function captureFrame(): HTMLCanvasElement | null {
   const scale = Math.max(vr.width / v.videoWidth, vr.height / v.videoHeight)
   const offX = (vr.width - v.videoWidth * scale) / 2
   const offY = (vr.height - v.videoHeight * scale) / 2
-  const sx = (fr.left - vr.left - offX) / scale
-  const sy = (fr.top - vr.top - offY) / scale
-  const sw = fr.width / scale
-  const sh = fr.height / scale
-  const c = document.createElement('canvas')
-  c.width = Math.round(sw)
-  c.height = Math.round(sh)
-  c.getContext('2d')!.drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height)
-  return c
+  // Position du cadre en fractions de l'image.
+  const fx = (fr.left - vr.left - offX) / scale / v.videoWidth
+  const fy = (fr.top - vr.top - offY) / scale / v.videoHeight
+  const fw = fr.width / scale / v.videoWidth
+  const fh = fr.height / scale / v.videoHeight
+
+  const track = stream?.getVideoTracks()[0]
+  const IC = (window as unknown as { ImageCapture?: new (t: MediaStreamTrack) => { takePhoto(): Promise<Blob> } }).ImageCapture
+  if (IC && track) {
+    try {
+      const bmp = await createImageBitmap(await new IC(track).takePhoto())
+      // Même cadrage que la vidéo seulement si les proportions sont identiques.
+      if (Math.abs(bmp.width / bmp.height - v.videoWidth / v.videoHeight) < 0.03 && bmp.width > v.videoWidth) return crop(bmp, fx, fy, fw, fh)
+    } catch {
+      /* pas de photo pleine définition : on prend l'image de la vidéo */
+    }
+  }
+  return crop(v as Img & HTMLVideoElement, fx, fy, fw, fh)
 }
 
 async function run(fn: () => Promise<ScanResult>) {
@@ -94,10 +119,13 @@ async function run(fn: () => Promise<ScanResult>) {
   }
 }
 
-function shoot() {
-  const c = captureFrame()
-  if (!c) return
-  return run(() => scanImage(c, true))
+const step = ref('')
+async function shoot() {
+  busy.value = true
+  step.value = 'Photo…'
+  const c = await captureFrame()
+  if (!c) return void (busy.value = false)
+  return run(() => scanImage(c, true, (s) => (step.value = s)))
 }
 
 async function onFile(e: Event) {
@@ -106,11 +134,12 @@ async function onFile(e: Event) {
   if (!file) return
   const bmp = await createImageBitmap(file)
   const c = document.createElement('canvas')
-  const k = Math.min(1, 2400 / Math.max(bmp.width, bmp.height))
+  // On garde la définition (le numéro est minuscule), en limitant pour la mémoire du téléphone.
+  const k = Math.min(1, 4000 / Math.max(bmp.width, bmp.height))
   c.width = Math.round(bmp.width * k)
   c.height = Math.round(bmp.height * k)
   c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height)
-  return run(() => scanImage(c, false))
+  return run(() => scanImage(c, false, (s) => (step.value = s)))
 }
 
 /** Saisie à la main : "TG03/TG30", "143/142", "Dracaufeu 4/102"… */
@@ -163,7 +192,7 @@ function again() {
           <span class="hint top">Nom</span>
           <span class="hint bottom">Numéro (ex. 143/142)</span>
         </div>
-        <div v-if="busy" class="busy"><span>Lecture en cours…</span></div>
+        <div v-if="busy" class="busy"><span>{{ step || 'Lecture en cours…' }}</span></div>
       </div>
       <p class="muted small tip">Cadre la carte entière dans le rectangle, bien à plat et éclairée, puis appuie sur « Scanner ».</p>
 
@@ -189,8 +218,9 @@ function again() {
           <b>{{ result.numbers.join(', ') }}</b>
         </p>
         <p v-else class="small">Je n’ai reconnu ni le nom ni le numéro.</p>
-        <p v-if="hits.length > 1" class="muted small">Plusieurs cartes possibles : touche la bonne.</p>
+        <p v-if="hits.length > 1 && hits[0].score > 0" class="muted small">Plusieurs cartes possibles : touche la bonne.</p>
         <p v-else-if="hits.length === 1" class="muted small">Touche la carte pour l’ajouter ou voir son prix.</p>
+        <p v-if="hits.length && hits[0].score === 0" class="muted small">Numéro non lu : voici toutes ses cartes.</p>
         <p v-else class="muted small">Essaie avec plus de lumière, en rapprochant la carte, ou tape le numéro à la main.</p>
         <div class="row">
           <button class="btn primary grow" @click="again">Scanner une autre carte</button>
