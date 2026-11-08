@@ -1,0 +1,55 @@
+# Regénère chaque semaine l'index des cartes depuis TCGdex (nouvelles extensions, nouvelles images).
+# S'il a changé, il est commité sur main, ce qui redéploie l'app sur Vercel.
+name: Mise à jour des cartes
+
+on:
+  schedule:
+    - cron: '0 5 * * 1' # chaque lundi à 5 h UTC
+  workflow_dispatch: # bouton « Run workflow » dans l'onglet Actions de GitHub
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Regénérer l'index
+        run: |
+          cp public/data/meta.json /tmp/meta.old.json
+          node scripts/build-data.mjs
+
+      # Sécurité : si TCGdex a mal répondu, l'index rétrécit. On ne publie pas un index tronqué.
+      - name: Vérifier l'index
+        run: |
+          node -e '
+            const fs = require("fs")
+            const before = JSON.parse(fs.readFileSync("/tmp/meta.old.json")).cards
+            const after = JSON.parse(fs.readFileSync("public/data/meta.json")).cards
+            console.log(`cartes : ${before} -> ${after}`)
+            if (after < before * 0.95) { console.error("Index tronqué : mise à jour annulée."); process.exit(1) }
+          '
+
+      - name: Commiter si les cartes ont changé
+        run: |
+          # meta.json change à chaque fois (date) : on ne regarde que les vraies données.
+          if git diff --quiet -- public/data/cards.json public/data/sets.json public/data/pokedex.json; then
+            echo "Aucune nouvelle carte."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          git commit -m "Données : mise à jour automatique de l'index des cartes"
+          git push
